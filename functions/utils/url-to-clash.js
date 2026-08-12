@@ -666,7 +666,9 @@ function parseHysteria2Url(url) {
             }
         }
 
-        if (params.get('ports')) proxy.ports = params.get('ports');
+        if (params.get('ports') || params.get('mport')) {
+            proxy.ports = params.get('ports') || params.get('mport');
+        }
         if (params.get('up')) proxy.up = params.get('up');
         if (params.get('down')) proxy.down = params.get('down');
         const fastOpen = params.get('fast_open') || params.get('fast-open');
@@ -892,7 +894,7 @@ type: 'wireguard',
 server,
 port,
 'private-key': privateKey,
-'remote-dns-resolve': true,
+// 'remote-dns-resolve': true, // just let the kernel decide whether to use it or not
 udp: true
 };
 
@@ -903,9 +905,28 @@ proxy['public-key'] = publicKey;
 }
 
 // 本地地址
+// const address = params.get('address');
+// if (address) {
+// proxy.ip = address.split(',').map(a => a.trim());
+// }
+// IPv6 Support
 const address = params.get('address');
 if (address) {
-proxy.ip = address.split(',').map(a => a.trim());
+    const addresses = address
+        .split(',')
+        .map(a => a.trim())
+        .filter(Boolean);
+
+    const ipv4 = addresses.find(a => !a.includes(':'));
+    const ipv6 = addresses.find(a => a.includes(':'));
+
+    if (ipv4) {
+        proxy.ip = ipv4.replace(/\/\d+$/, '');
+    }
+
+    if (ipv6) {
+        proxy.ipv6 = ipv6.replace(/\/\d+$/, '');
+    }
 }
 
 // Allowed IPs
